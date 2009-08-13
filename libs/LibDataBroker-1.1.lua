@@ -88,4 +88,3 @@ if oldminor < 4 then
 		return ipairs_iter, attributestorage[dataobj], 0
 	end
 end
-nd
