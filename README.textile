@@ -1,0 +1,17 @@
+h2. Overview
+
+Tipsy is a simple tooltip repositioning addon. Nothing more, nothing less. Tipsy is the continued evolution of the Ace2 addon LitheTooltipDoctor and replaces it.
+
+Includes a LibDataBroker luancher for quick access to the positioning frame.
+
+h2. Slash commands
+
+|*Slash Command*|*Description*|
+|/tipsy|Display usage and version information|
+|/tipsy show|Show the positioning frame.|
+|/tipsy reset|Reset the tooltip position to the default|
+
+h2. Bugs, Suggestions or Comments
+
+Please file any bugs, suggestions or comments as a ticket on the "CurseForge project":http://wow.curseforge.com/projects/tipsy/tickets/
+
