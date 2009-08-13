@@ -12,7 +12,6 @@
 ## X-LoadOn-Always: delayed
 
 libs\LibStub.lua
-libs\AceDB-3.0.lua
 libs\CallbackHandler-1.0.lua
 libs\LibDataBroker-1.1.lua
 libs\tekKonfigAboutPanel.lua
