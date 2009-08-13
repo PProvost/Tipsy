@@ -19,16 +19,18 @@ limitations under the License.
 local L = setmetatable({}, {__index=function(t,i) return i end})
 local function Print(...) print("|cFF33FF99Tipsy|r:", ...) end
 local db = nil
+local anchorFrame = nil
+
+local debugf = tekDebug and tekDebug:GetFrame("Tipsy")
+local function Debug(...) if debugf then debugf:AddMessage(string.join(", ", tostringall(...))) end end
 
 local defaults = {
-	profile = {
-		-- Default location copied from FrameXML/GameTooltip.lua
-		-- tooltip:SetPoint("BOTTOMRIGHT", "UIParent", "BOTTOMRIGHT", -CONTAINER_OFFSET_X - 13, CONTAINER_OFFSET_Y);
-		point = "BOTTOMRIGHT",
-		relativePoint = "BOTTOMRIGHT",
-		xOfs = -CONTAINER_OFFSET_X - 13,
-		yOfs = CONTAINER_OFFSET_Y,
-	}
+	-- Default location copied from FrameXML/GameTooltip.lua
+	-- tooltip:SetPoint("BOTTOMRIGHT", "UIParent", "BOTTOMRIGHT", -CONTAINER_OFFSET_X - 13, CONTAINER_OFFSET_Y);
+	point = "BOTTOMRIGHT",
+	relativePoint = "BOTTOMRIGHT",
+	xOfs = -CONTAINER_OFFSET_X - 13,
+	yOfs = CONTAINER_OFFSET_Y,
 }
 
 local function Tipsy_GameTooltip_SetDefaultAnchor(tooltip, parent, ...)
@@ -37,37 +39,47 @@ local function Tipsy_GameTooltip_SetDefaultAnchor(tooltip, parent, ...)
 	tooltip:SetPoint(db.point, UIParent, db.relativePoint, db.xOfs, db.yOfs)
 end
 
-Tipsy = CreateFrame("frame")
-Tipsy:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event](self, event, ...) end end)
-Tipsy:RegisterEvent("ADDON_LOADED")
+-- Event handler frame
+local f = CreateFrame("frame")
+f:SetScript("OnEvent", function(self, event, ...) if self[event] then return self[event](self, event, ...) end end)
+f:RegisterEvent("ADDON_LOADED")
 
-function Tipsy:ADDON_LOADED(event, addon)
-	if addon:lower() ~= "addontemplate" then return end
+function f:ADDON_LOADED(event, addon)
+	if addon:lower() ~= "tipsy" then return end
+	
+	-- convert the old Ace3 database
+	if TipsyDB and TipsyDB.profiles and TipsyDB.profiles.Default then
+		local newDB = {}
+		for k,v in pairs(TipsyDB.profiles.Default) do newDB[k] = v end
+		TipsyDB = newDB
+	end
 
-	self.db = LibStub("AceDB-3.0"):New("TipsyDB", defaults, "Default")
-	db = self.db.profile
+	TipsyDB = setmetatable(TipsyDB or {}, {__index = defaults})
+	db = TipsyDB
 
 	LibStub("tekKonfig-AboutPanel").new(nil, "Tipsy")
-
 	hooksecurefunc("GameTooltip_SetDefaultAnchor", Tipsy_GameTooltip_SetDefaultAnchor)
+
+	self:UnregisterEvent("ADDON_LOADED")
+	self.ADDON_LOADED = nil
+	if IsLoggedIn() then self:PLAYER_LOGIN() else self:RegisterEvent("PLAYER_LOGIN") end
+end
+ 
+ 
+function f:PLAYER_LOGIN()
+	self:RegisterEvent("PLAYER_LOGOUT")
+	-- Do anything you need to do after the player has entered the world
+	self:UnregisterEvent("PLAYER_LOGIN")
+	self.PLAYER_LOGIN = nil
+end
+ 
+ 
+function f:PLAYER_LOGOUT()
+	for i,v in pairs(defaults) do if db[i] == v then db[i] = nil end end
+	-- Do anything you need to do as the player logs out
 end
 
-function Tipsy:ResetTooltipAnchor()
-	db.point = defaults.profile.point
-	db.relativePoint = defaults.profile.point
-	db.xOfs = defaults.profile.xOfs
-	db.yOfs = defaults.profile.yOfs
-	self:ShowTooltipAnchor()
-end
-
-function Tipsy:ShowTooltipAnchor()
-	if self.anchorFrame == nil then self.anchorFrame = self:CreateAnchorFrame() end
-	self.anchorFrame:ClearAllPoints()
-	self.anchorFrame:SetPoint( self.db.profile.point, UIParent, self.db.profile.relativePoint, self.db.profile.xOfs, self.db.profile.yOfs )
-	self.anchorFrame:Show()
-end
-
-function Tipsy:GetTipAnchor(frame)
+local function GetTipAnchor(frame)
 	local x,y = frame:GetCenter()
 	if not x or not y then return "TOPLEFT", "BOTTOMLEFT" end
 	local hhalf = (x > UIParent:GetWidth()*2/3) and "RIGHT" or (x < UIParent:GetWidth()/3) and "LEFT" or ""
@@ -75,8 +87,7 @@ function Tipsy:GetTipAnchor(frame)
 	return vhalf..hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP")..hhalf
 end
 
-function Tipsy:CreateAnchorFrame()
-	local db = self.db.profile
+local function CreateAnchorFrame()
 	local frame = CreateFrame("Frame", nil, UIParent)
 	frame:SetFrameStrata("DIALOG")
 	frame:SetWidth(125)
@@ -123,16 +134,31 @@ function Tipsy:CreateAnchorFrame()
 	return frame
 end
 
+local function ShowTooltipAnchor()
+	if anchorFrame == nil then anchorFrame = CreateAnchorFrame() end
+	anchorFrame:ClearAllPoints()
+	anchorFrame:SetPoint( db.point, UIParent, db.relativePoint, db.xOfs, db.yOfs )
+	anchorFrame:Show()
+end
+
+local function ResetTooltipAnchor()
+	db.point = defaults.point
+	db.relativePoint = defaults.point
+	db.xOfs = defaults.xOfs
+	db.yOfs = defaults.yOfs
+	ShowTooltipAnchor()
+end
+
 LibStub:GetLibrary("LibDataBroker-1.1"):NewDataObject("Tipsy", {
 	type = "launcher",
 	icon = [[Interface\AddOns\Tipsy\Icon]],
 	text = L["Tipsy"],
 	OnClick = function(frame, button)
-		Tipsy:ShowTooltipAnchor() 
+		ShowTooltipAnchor() 
 	end,
 	OnEnter = function(frame)
 		GameTooltip:SetOwner(frame, "ANCHOR_NONE")
-		GameTooltip:SetPoint(Tipsy:GetTipAnchor(frame))
+		GameTooltip:SetPoint(GetTipAnchor(frame))
 		GameTooltip:ClearLines()
 
 		GameTooltip:AddLine(L["Tipsy"])
@@ -157,9 +183,9 @@ SLASH_TIPSY1 = L["/tipsy"]
 SlashCmdList.TIPSY = function(msg)
 	local command, args = GetSlashCommand(msg)
 	if command == "show" then
-		Tipsy:ShowTooltipAnchor()
+		ShowTooltipAnchor()
 	elseif command == "reset" then
-		Tipsy:ResetTooltipAnchor()
+		ResetTooltipAnchor()
 	else
 		Print(L["Tipsy Usage:"])
 		Print(L["/tipsy show - show the tooltip anchor"])
