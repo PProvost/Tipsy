@@ -21,8 +21,10 @@ local function Print(...) print("|cFF33FF99Tipsy|r:", ...) end
 local db = nil
 local anchorFrame = nil
 
+--[[
 local debugf = tekDebug and tekDebug:GetFrame("Tipsy")
 local function Debug(...) if debugf then debugf:AddMessage(string.join(", ", tostringall(...))) end end
+]]
 
 local defaults = {
 	-- Default location copied from FrameXML/GameTooltip.lua
@@ -187,7 +189,9 @@ SlashCmdList.TIPSY = function(msg)
 	elseif command == "reset" then
 		ResetTooltipAnchor()
 	else
-		Print(L["Tipsy Usage:"])
+		Print(L["Tipsy "] .. GetAddOnMetadata("Tipsy", "Version"))
+		Print(L["Usage:"])
+		Print(L["/tipsy - displays this message"])
 		Print(L["/tipsy show - show the tooltip anchor"])
 		Print(L["/tipsy reset - reset the tooltip anchor to the bottom right"])
 	end
