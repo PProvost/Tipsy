@@ -118,18 +118,18 @@ local function CreateAnchorFrame()
 	frame:SetMovable(true)
 	frame:RegisterForDrag("LeftButton")
 
-	frame:SetScript("OnDragStart", function() 
-		this:StartMoving() 
+	frame:SetScript("OnDragStart", function(self) 
+		self:StartMoving() 
 	end)
 
-	frame:SetScript("OnDragStop", function() 
-		this:StopMovingOrSizing() 
+	frame:SetScript("OnDragStop", function(self) 
+		self:StopMovingOrSizing() 
 	end)
 
-	frame:SetScript("OnMouseDown", function(this, button)
+	frame:SetScript("OnMouseDown", function(self, button)
 		if button == "RightButton" then
-			db.point, _, db.relativePoint, db.xOfs, db.yOfs = this:GetPoint()
-			this:Hide()
+			db.point, _, db.relativePoint, db.xOfs, db.yOfs = self:GetPoint()
+			self:Hide()
 		end
 	end)
 
